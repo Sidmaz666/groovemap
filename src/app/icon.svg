@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0c0c0d"/>
+  <!-- crossed drum sticks -->
+  <g stroke="#a3e635" stroke-width="3.4" stroke-linecap="round">
+    <line x1="15" y1="9" x2="33" y2="24"/>
+    <line x1="49" y1="9" x2="31" y2="24"/>
+  </g>
+  <!-- drum shell -->
+  <path d="M17 28 v13 a15 6.5 0 0 0 30 0 v-13 z" fill="#a3e635"/>
+  <!-- head -->
+  <ellipse cx="32" cy="28" rx="15" ry="6.5" fill="#a3e635"/>
+  <ellipse cx="32" cy="28" rx="11" ry="4.6" fill="#0c0c0d"/>
+</svg>

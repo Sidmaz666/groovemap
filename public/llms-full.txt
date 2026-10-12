@@ -1,0 +1,255 @@
+# Groovemap
+
+> Groovemap is a drum-pattern encyclopedia: 4,105 authentic drum patterns across 38 style families — rock, funk, jazz, bossa, samba, reggae, hip-hop, trap, house, jungle, drill, Balkan odd meters, Indian talas and more. Every pattern is a step-event grid with velocities, construction notes, per-instrument roles, variations, provenance, an ASCII drum tab and references — playable in the browser and fully machine-readable. This site is optimized for LLM consumption: open REST API, MCP server, robots-allowed AI crawlers.
+
+## Catalog
+
+- 4,105 patterns · 38 style families · 441 genre tags
+- 17 meters: 4/4 (3819), 7/8 (47), 10/8 (27), 3/4 (24), 9/8 (23), 5/8 (22), 11/8 (22), 5/4 (21), 8/4 (21), 2/4 (19), 7/4 (12), 6/4 (11), 10/4 (11), 12/4 (11), 14/4 (11), 12/8 (2), 6/8 (2)
+- 7 recorded sample kits (no synth drums): studio (1248), tight (709), analog808 (485), analog909 (448), dusty (522), synth (172), perc (521)
+- Feels: straight (2964), swung (696), shuffled (208), broken (186), triplet (51)
+- BPM range 50–290
+- 15 curated collections (e.g. "First Beats to Learn", "Foundational Dance Grooves")
+- Family keys: rock, pop, metal, punk, country, gospel, blues, funk, rnb, disco, jazz, bossa, samba, latin, reggae, ska, hiphop, trap, lofi, house, garage, jungle, breaks, techno, dubstep, afrobeat, world, experimental, learn, synthwave, fills, indian, arabic, balkan, caribbean, african, drill, club
+- Live totals: `GET /api/v1/stats`
+
+## REST API (base: /api/v1)
+
+All endpoints are GET, read-only, JSON, CORS-open. Every response carries a `meta` block (service, endpoint, docs, next-step hint), sends CORS `*` and `Cache-Control: public, max-age=300` on stable GETs.
+Full reference: [source docs](/api/v1/README.md) · machine discovery: `GET /api/v1?format=text`.
+
+- [GET /api/v1](/api/v1): discovery document (endpoint list + catalog summary); `?format=text` for markdown.
+- [GET /api/v1/patterns](/api/v1/patterns): search/list patterns — returns `{ total, count, offset, items }` of compact cards.
+- [GET /api/v1/patterns/{id}](/api/v1/patterns/backbeat-basic): one pattern, complete — events grid, learning notes, knowledge, drum tab, references, related.
+- [GET /api/v1/families](/api/v1/families): all style families with counts, meters, BPM ranges, sample ids.
+- [GET /api/v1/families/{key}](/api/v1/families/funk): family knowledge + its patterns (`?limit=`).
+- [GET /api/v1/random](/api/v1/random): random pattern(s), `?count=1..10`.
+- [GET /api/v1/collections](/api/v1/collections): 15 curated collections (`?items=1` embeds patterns).
+- [GET /api/v1/stats](/api/v1/stats): catalog totals.
+
+## MCP server (Model Context Protocol)
+
+Streamable HTTP transport, JSON-RPC 2.0, single endpoint. Connect any MCP client:
+
+- Gateway path: `/mcp?XTransformPort=3121` (relative to this site's origin)
+- Local: `http://127.0.0.1:3121/mcp`
+- Handshake: `POST /mcp {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}`
+- Tools: `search_patterns`, `get_pattern`, `list_families`, `get_family`, `random_pattern`, `get_stats`, `list_collections`, `export_pattern_midi_b64`
+- Tool results are LLM-optimized text blocks (compact cards, ASCII tabs, base64 MIDI).
+
+## Crawl & index
+
+- robots.txt explicitly allows GPTBot, ClaudeBot, PerplexityBot, CCBot, Google-Extended and other AI agents — everything on this site is meant to be read.
+- Expanded reference (every family + full parameter tables + example responses): [llms-full.txt](/llms-full.txt)
+
+## Example queries
+
+- "Show me advanced funk patterns with ghost notes" → `GET /api/v1/patterns?family=funk&difficulty=advanced&q=ghost`
+- "Something between 120 and 130 BPM in 4/4" → `GET /api/v1/patterns?meter=4/4&bpm_min=120&bpm_max=130`
+- "What is a karsilama?" → `GET /api/v1/patterns/karsilama-9-8` (9/8 Balkan timeline, with story + tab)
+- "Pick a random groove" → `GET /api/v1/random?count=3`
+- "Export the basic rock beat as MIDI" → MCP `export_pattern_midi_b64 {id: "backbeat-basic"}`
+
+## Licensing & provenance
+
+Pattern data (step grids, original descriptions, learning notes) is by Groovemap and free to quote with attribution. Entries are original study compositions, documented common-practice skeletons (`source.type: "reference"`), or traditional timelines (`"traditional"`) presented with cultural context — every pattern carries an honest `source` label. Traditional rhythms belong to their living traditions.
+
+---
+
+# Full reference (llms-full.txt)
+
+### /api/v1/patterns parameters
+
+| Param | Values | Default | Meaning |
+| --- | --- | --- | --- |
+| limit | 1–200 | 50 | page size |
+| offset | ≥ 0 | 0 | pagination |
+| family | csv of family keys | — | e.g. `funk`, `jungle,house` |
+| genre | csv of genre tags | — | e.g. `Jazz` (case-insensitive) |
+| q | text | — | full-text over title/summary/description/family/genres/tags |
+| meter | "num/den" | — | e.g. `4/4`, `7/8`, `12/8` |
+| feel | csv | — | straight, swung, shuffled, triplet, broken |
+| difficulty | csv | — | beginner, intermediate, advanced |
+| bpm_min / bpm_max | number | — | filter the pattern's canonical BPM |
+| bars | number | — | exact bar count (1, 2…) |
+| subdivision | 1/2/3/4/6 | — | 4 = 16ths, 3 = triplets, 2 = 8ths |
+| sort | bpm, difficulty, family, id | catalog order | |
+| fields | compact, full | compact | full adds description, tags, tracks, events, learning, variations, related |
+
+### Example response — GET /api/v1/patterns?family=rock&limit=1
+
+```json
+{
+  "id": "backbeat-basic",
+  "title": "Basic Rock Backbeat",
+  "family": "rock",
+  "bpm": 96,
+  "timeSignature": "4/4",
+  "bars": 1,
+  "subdivision": 4,
+  "feel": "straight",
+  "swing": 0,
+  "tracks": [
+    {
+      "id": "kick",
+      "inst": "kick",
+      "vol": 1
+    },
+    {
+      "id": "snare",
+      "inst": "snare",
+      "vol": 0.9
+    },
+    {
+      "id": "hatClosed",
+      "inst": "hatClosed",
+      "vol": 0.6
+    }
+  ],
+  "events": [
+    {
+      "t": "kick",
+      "s": 0,
+      "v": 127
+    },
+    {
+      "t": "kick",
+      "s": 8,
+      "v": 127
+    },
+    {
+      "t": "snare",
+      "s": 4,
+      "v": 127
+    },
+    {
+      "t": "snare",
+      "s": 12,
+      "v": 127
+    },
+    {
+      "t": "hatClosed",
+      "s": 0,
+      "v": 127
+    },
+    {
+      "t": "hatClosed",
+      "s": 2,
+      "v": 100
+    }
+  ],
+  "eventsNote": "…12 events total ({ t, s, v, p?, r? })",
+  "learning": {
+    "construction": "Layer 1: straight eighth hi-hats. Layer 2: kick on beats 1 and 3. Layer 3: snare on beats 2 and 4. Nothing is syncopated…",
+    "roles": "…per-instrument notes"
+  },
+  "source": {
+    "type": "reference",
+    "note": "Common-practice pattern; the standard rock backbeat taught in virtually every drum method."
+  }
+}
+```
+
+Compact item shape (every list endpoint):
+
+```json
+{
+  "id": "backbeat-basic",
+  "title": "Basic Rock Backbeat",
+  "family": "rock",
+  "genres": ["Rock", "Pop"],
+  "bpm": 96,
+  "timeSignature": "4/4",
+  "feel": "straight",
+  "difficulty": "beginner",
+  "bars": 1,
+  "subdivision": 4,
+  "swing": 0,
+  "summary": "The anchor of popular music: kick on 1 & 3, snare on 2 & 4, straight eighth hats.",
+  "stepCount": 16,
+  "hitCount": 12,
+  "kit": "studio"
+}
+```
+
+### Reading the grid
+
+- `events[]` = `{ t: trackId, s: absoluteStep, v: velocity 1-127, p?: probability, r?: ratchet rolls }`
+- absolute step = `bar × stepsPerBar + positionInBar`; `stepsPerBar = beatsPerBar × subdivision`
+- velocity tiers: ≥120 accent (X), ≥75 normal (x), else ghost (o); drum-tab legend: `X x o 2/3/4 rolls, p probabilistic, - rest`
+- `notation.drumTab.rows` = `{ inst, label, bars: [one char per step per bar] }` with `counts` per bar — render top-to-bottom as an ASCII tab
+- exports: `export_pattern_midi_b64` (MCP) returns base64 of a General-MIDI Type-0 .mid (channel 10, 480 PPQ, tempo + time-signature meta)
+
+## All style families (38)
+
+- [Rock](/api/v1/families/rock): `rock` — 140 patterns, meters 4/4, BPM 88–168. Sample: `/api/v1/patterns/backbeat-basic`
+- [Pop](/api/v1/families/pop): `pop` — 118 patterns, meters 4/4, BPM 90–140. Sample: `/api/v1/patterns/pop-chart-8ths`
+- [Metal](/api/v1/families/metal): `metal` — 124 patterns, meters 4/4, BPM 70–200. Sample: `/api/v1/patterns/metal-driving-16ths`
+- [Punk](/api/v1/families/punk): `punk` — 113 patterns, meters 4/4, BPM 120–200. Sample: `/api/v1/patterns/punk-straight-eighths`
+- [Country & Bluegrass](/api/v1/families/country): `country` — 108 patterns, meters 4/4, BPM 76–180. Sample: `/api/v1/patterns/country-train-beat`
+- [Gospel](/api/v1/families/gospel): `gospel` — 104 patterns, meters 4/4, BPM 80–175. Sample: `/api/v1/patterns/gospel-shout`
+- [Blues & Shuffle](/api/v1/families/blues): `blues` — 107 patterns, meters 4/4, BPM 60–168. Sample: `/api/v1/patterns/blues-12-8-slow`
+- [Funk & Soul](/api/v1/families/funk): `funk` — 140 patterns, meters 4/4, BPM 72–112. Sample: `/api/v1/patterns/funk-16ths`
+- [R&B / Soul](/api/v1/families/rnb): `rnb` — 123 patterns, meters 4/4, BPM 62–135. Sample: `/api/v1/patterns/rnb-soul-ballad`
+- [Disco & Boogie](/api/v1/families/disco): `disco` — 114 patterns, meters 4/4, BPM 113–124. Sample: `/api/v1/patterns/disco-classic`
+- [Jazz](/api/v1/families/jazz): `jazz` — 108 patterns, meters 4/4/3/4, BPM 66–240. Sample: `/api/v1/patterns/jazz-swing`
+- [Bossa Nova](/api/v1/families/bossa): `bossa` — 77 patterns, meters 4/4, BPM 86–138. Sample: `/api/v1/patterns/bossa-core`
+- [Samba](/api/v1/families/samba): `samba` — 85 patterns, meters 4/4, BPM 96–132. Sample: `/api/v1/patterns/samba-partido-alto`
+- [Latin Timelines](/api/v1/families/latin): `latin` — 102 patterns, meters 4/4/12/8, BPM 90–190. Sample: `/api/v1/patterns/son-clave-32`
+- [Dub & Reggae](/api/v1/families/reggae): `reggae` — 119 patterns, meters 4/4, BPM 70–86. Sample: `/api/v1/patterns/reggae-one-drop`
+- [Ska & Rocksteady](/api/v1/families/ska): `ska` — 111 patterns, meters 4/4, BPM 92–186. Sample: `/api/v1/patterns/ska-upstroke-1`
+- [Hip-Hop & Boom Bap](/api/v1/families/hiphop): `hiphop` — 136 patterns, meters 4/4, BPM 76–142. Sample: `/api/v1/patterns/hiphop-oldschool`
+- [Trap](/api/v1/families/trap): `trap` — 127 patterns, meters 4/4, BPM 70–148. Sample: `/api/v1/patterns/trap-modern`
+- [Lo-Fi & Chill](/api/v1/families/lofi): `lofi` — 114 patterns, meters 4/4, BPM 58–88. Sample: `/api/v1/patterns/lofi-jazzhop-swing`
+- [House](/api/v1/families/house): `house` — 110 patterns, meters 4/4, BPM 120–126. Sample: `/api/v1/patterns/house-basic`
+- [UK Garage & Broken](/api/v1/families/garage): `garage` — 125 patterns, meters 4/4, BPM 128–137. Sample: `/api/v1/patterns/garage-4x4`
+- [Jungle & DnB](/api/v1/families/jungle): `jungle` — 126 patterns, meters 4/4, BPM 160–174. Sample: `/api/v1/patterns/jungle-two-step`
+- [Breaks & Big Beat](/api/v1/families/breaks): `breaks` — 121 patterns, meters 4/4, BPM 108–136. Sample: `/api/v1/patterns/breaks-funky`
+- [Techno & Electro](/api/v1/families/techno): `techno` — 128 patterns, meters 4/4, BPM 128–180. Sample: `/api/v1/patterns/techno-basic`
+- [Dubstep & 140](/api/v1/families/dubstep): `dubstep` — 114 patterns, meters 4/4, BPM 138–160. Sample: `/api/v1/patterns/dubstep-halftime-140`
+- [Afrobeat](/api/v1/families/afrobeat): `afrobeat` — 109 patterns, meters 4/4, BPM 100–124. Sample: `/api/v1/patterns/afrobeat-groove`
+- [World Percussion](/api/v1/families/world): `world` — 57 patterns, meters 12/8/9/8/7/8/4/4/6/8, BPM 92–130. Sample: `/api/v1/patterns/ewe-bell`
+- [Odd Meter & Experimental](/api/v1/families/experimental): `experimental` — 85 patterns, meters 3/4/5/4/4/4/7/8/7/4, BPM 96–172. Sample: `/api/v1/patterns/waltz-backbeat`
+- [Building Blocks](/api/v1/families/learn): `learn` — 64 patterns, meters 4/4, BPM 96–120. Sample: `/api/v1/patterns/build-01-kick-quarters`
+- [Synthwave](/api/v1/families/synthwave): `synthwave` — 77 patterns, meters 4/4, BPM 102–118. Sample: `/api/v1/patterns/synthwave-gated`
+- [Fills & Phrasing](/api/v1/families/fills): `fills` — 172 patterns, meters 4/4/7/8/5/4/6/8, BPM 76–174. Sample: `/api/v1/patterns/fill-rock-16th-toms`
+- [Indian & Carnatic](/api/v1/families/indian): `indian` — 111 patterns, meters 4/4/6/4/7/4/10/4/12/4/14/4/8/4/7/8/5/8, BPM 60–150. Sample: `/api/v1/patterns/indian-teentaal-core`
+- [Middle Eastern](/api/v1/families/arabic): `arabic` — 92 patterns, meters 4/4/8/4/2/4/10/8, BPM 50–120. Sample: `/api/v1/patterns/arabic-maqsum`
+- [Balkan & Aksak](/api/v1/families/balkan): `balkan` — 88 patterns, meters 7/8/5/8/9/8/11/8, BPM 150–290. Sample: `/api/v1/patterns/balkan-ruchenitsa`
+- [Caribbean & Carnival](/api/v1/families/caribbean): `caribbean` — 93 patterns, meters 4/4/2/4, BPM 82–176. Sample: `/api/v1/patterns/caribbean-reggaeton-dembow`
+- [African & Diaspora](/api/v1/families/african): `african` — 78 patterns, meters 4/4/2/4, BPM 96–150. Sample: `/api/v1/patterns/african-highlife-main`
+- [Drill & Grime](/api/v1/families/drill): `drill` — 77 patterns, meters 4/4, BPM 104–144. Sample: `/api/v1/patterns/drill-uk-sliding-808`
+- [Club & Ballroom](/api/v1/families/club): `club` — 108 patterns, meters 4/4, BPM 108–160. Sample: `/api/v1/patterns/club-jersey-triplet-bed`
+
+## All curated collections (15)
+
+- `first-beats` — "First Beats to Learn" (6 patterns): Start here: simple, satisfying grooves that teach the fundamentals. — ids: build-01-kick-quarters, build-02-eighth-hats, backbeat-basic, hiphop-oldschool, reggae-one-drop, build-03-sixteenth-hats
+- `dance-floor` — "Foundational Dance Grooves" (6 patterns): Four-on-the-floor DNA from disco to techno. — ids: disco-classic, house-basic, techno-basic, deep-house, disco-strings, garage-4x4
+- `funk-syncopation` — "Funk & Syncopation" (6 patterns): Ghost notes, displaced kicks and the fine art of the one. — ids: funk-16ths, funk-jb, motown-groove, breaks-funky, breaks-think, funk-open-push
+- `broken-grooves` — "Broken & Swung" (5 patterns): UK garage, broken beat and the jungle chop. — ids: ukg-2step, broken-beat, garage-4x4, jungle-two-step, dnb-rolling
+- `odd-meters` — "Odd Meters & Timelines" (5 patterns): 3/4 to 12/8 — rhythms that refuse the four-count. — ids: waltz-backbeat, five-four-take, seven-eight-rupcha, karsilama-9-8, ewe-bell
+- `sparse-minimal` — "Sparse & Minimal" (5 patterns): Less is a rhythm section: space as an instrument. — ids: minimal-click, techno-basic, reggae-one-drop, soul-slow, lofi-hop
+- `dense-percussion` — "Dense Percussion" (5 patterns): When every sixteenth has a voice. — ids: afrobeat-busy, samba-batucada, funk-16ths, jungle-two-step, trap-rolling
+- `live-foundations` — "Live-Band Foundations" (6 patterns): Acoustic grooves for bands, singers and songwriters. — ids: backbeat-basic, rock-drive, soul-slow, jazz-brush, jazz-swing, motown-groove
+- `building-blocks` — "Rhythm Building Exercises" (6 patterns): The Learn-series patterns in playing order. — ids: build-01-kick-quarters, build-02-eighth-hats, build-03-sixteenth-hats, build-04-offbeat, build-05-ghosts, build-06-fill
+- `math-rhythms` — "Mathematical Rhythms" (4 patterns): Euclidean generators, cross-rhythms and probability. — ids: euclid-sketch, polyrhythm-3-4, idm-glitch, ewe-bell
+- `roots-american` — "Roots: Blues, Country & Gospel" (7 patterns): Shuffles, train beats and shout-band fire — the American wellspring. — ids: blues-texas-shuffle, blues-12-8-slow, country-train-beat, country-two-step, gospel-shout, gospel-12-8, rock-bo-diddley
+- `heavy-units` — "Heavy Machinery" (6 patterns): Metal, punk and the double-kick discipline. — ids: metal-gallop, metal-double-kick, metal-blast-fragment, punk-d-beat, punk-straight-eighths, metal-half-time-thrash
+- `atlantic-grooves` — "Atlantic Grooves: Bossa to Samba" (6 patterns): Bossa clave wisdom and samba ground motion. — ids: bossa-core, bossa-2-bar, samba-partido-alto, samba-reggae-olodum, samba-pandeiro, latin-rumba-guaguanco
+- `street-140` — "Street & 140" (6 patterns): Drill, grime, dubstep and footwork — the halftime generation. — ids: hiphop-drill-uk, grime-eski, dubstep-halftime-140, footwork-juke, trap-south-bounce, dubstep-riddim
+- `fills-phrasing` — "Fills & Phrasing" (6 patterns): Turnarounds, press rolls and chops that move a track. — ids: fill-rock-16th-toms, fill-press-roll, fill-linear-gospel, fill-dnb-ghost, fill-latin-conga-call, fill-boom-bap-2bar
+
+## MCP tools reference
+
+- `search_patterns` — args: family?, genre?, q?, bpm_min?, bpm_max?, difficulty?, limit? → compact cards
+- `get_pattern` — args: id → metadata + ASCII drum tab + construction + roles + story + references + related
+- `list_families` — no args → 38 families with counts/meters/BPM
+- `get_family` — args: key, limit? → family knowledge + patterns
+- `random_pattern` — args: count? (1-10) → random cards
+- `get_stats` — no args → catalog totals
+- `list_collections` — no args → curated collections with ids
+- `export_pattern_midi_b64` — args: id → base64 Type-0 MIDI (.mid) for download
+
+---
+
+_Generated from the live catalog by mini-services/mcp-server/scripts/gen-llms.ts — totals reflect the catalog at generation time; always confirm against /api/v1/stats._
